@@ -20,6 +20,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
+	"io"
 	"os"
 	"time"
 )
@@ -68,10 +69,16 @@ func (l *AllowedLevel) Set(s string) error {
 // with a timestamp. The output always goes to stderr.
 func InitLog(allowFormat string, allowLevel string, filename string) {
 	var (
-		al = &AllowedLevel{}
+		al   = &AllowedLevel{}
+		file io.Writer
 	)
 	al.Set(allowLevel)
-	file, _ := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+
+	if fd, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666); err == nil {
+		file = fd
+	} else {
+		file = os.Stderr
+	}
 	if allowFormat == "logfmt" {
 		Logger = log.NewLogfmtLogger(log.NewSyncWriter(file))
 	} else {
