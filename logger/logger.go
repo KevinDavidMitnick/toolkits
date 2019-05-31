@@ -66,15 +66,16 @@ func (l *AllowedLevel) Set(s string) error {
 
 // New returns a new leveled oklog logger. Each logged line will be annotated
 // with a timestamp. The output always goes to stderr.
-func InitLog(allowFormat string, allowLevel string) {
+func InitLog(allowFormat string, allowLevel string, filename string) {
 	var (
 		al = &AllowedLevel{}
 	)
 	al.Set(allowLevel)
+	file, _ := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if allowFormat == "logfmt" {
-		Logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+		Logger = log.NewLogfmtLogger(log.NewSyncWriter(file))
 	} else {
-		Logger = log.NewJSONLogger(log.NewSyncWriter(os.Stderr))
+		Logger = log.NewJSONLogger(log.NewSyncWriter(file))
 	}
 
 	Logger = level.NewFilter(Logger, al.o)
