@@ -1,128 +1,82 @@
-package logger
+// Copyright 2017 The Prometheus Authors
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package promlog defines standardised ways to initialize Go kit loggers
+// across Prometheus components.
+// It should typically only ever be imported by main packages.
+package g
 
 import (
-	"fmt"
-	"log"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	"os"
-	"strings"
+	"time"
 )
 
 var (
-	level       int
-	traceLogger = log.New(os.Stdout, "[T] ", log.Ldate|log.Ltime|log.Lshortfile)
-	debugLogger = log.New(os.Stdout, "[D] ", log.Ldate|log.Ltime|log.Lshortfile)
-	infoLogger  = log.New(os.Stdout, "[I] ", log.Ldate|log.Ltime|log.Lshortfile)
-	warnLogger  = log.New(os.Stdout, "[W] ", log.Ldate|log.Ltime|log.Lshortfile)
-	errorLogger = log.New(os.Stdout, "[E] ", log.Ldate|log.Ltime|log.Lshortfile)
-	fatalLogger = log.New(os.Stdout, "[F] ", log.Ldate|log.Ltime|log.Lshortfile)
+	// This timestamp format differs from RFC3339Nano by using .000 instead
+	// of .999999999 which changes the timestamp from 9 variable to 3 fixed
+	// decimals (.130 instead of .130987456).
+	timestampFormat = log.TimestampFormat(
+		func() time.Time { return time.Now().UTC() },
+		"2006-01-02T15:04:05.000Z07:00",
+	)
+	Logger log.Logger
 )
 
-func SetLevelWithDefault(lv, defaultLv string) {
-	err := SetLevel(lv)
-	if err != nil {
-		SetLevel(defaultLv)
-	}
+// AllowedLevel is a settable identifier for the minimum level a log entry
+// must be have.
+type AllowedLevel struct {
+	s string
+	o level.Option
 }
 
-func SetLevel(lv string) error {
-	if lv == "" {
-		return fmt.Errorf("log level is blank")
-	}
+func (l *AllowedLevel) String() string {
+	return l.s
+}
 
-	l := strings.ToUpper(lv)
-
-	switch l[0] {
-	case 'T':
-		level = 0
-	case 'D':
-		level = 1
-	case 'I':
-		level = 2
-	case 'W':
-		level = 3
-	case 'E':
-		level = 4
-	case 'F':
-		level = 5
+// Set updates the value of the allowed level.
+func (l *AllowedLevel) Set(s string) error {
+	switch s {
+	case "debug":
+		l.o = level.AllowDebug()
+	case "info":
+		l.o = level.AllowInfo()
+	case "warn":
+		l.o = level.AllowWarn()
+	case "error":
+		l.o = level.AllowError()
 	default:
-		level = 6
+		return errors.Errorf("unrecognized log level %q", s)
 	}
-
-	if level == 6 {
-		return fmt.Errorf("log level setting error")
-	}
-
+	l.s = s
 	return nil
 }
 
-func Trace(format string, v ...interface{}) {
-	if 0 >= level {
-		traceLogger.Output(2, fmt.Sprintf(format, v...))
+// New returns a new leveled oklog logger. Each logged line will be annotated
+// with a timestamp. The output always goes to stderr.
+func InitLog(allowFormat string, allowLevel string) {
+	var (
+		al = &AllowedLevel{}
+	)
+	al.Set(allowLevel)
+	if allowFormat == "logfmt" {
+		Logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	} else {
+		Logger = log.NewJSONLogger(log.NewSyncWriter(os.Stderr))
 	}
-}
 
-func Debug(format string, v ...interface{}) {
-	if 1 >= level {
-		debugLogger.Output(2, fmt.Sprintf(format, v...))
-	}
-}
-
-func Info(format string, v ...interface{}) {
-	if 2 >= level {
-		infoLogger.Output(2, fmt.Sprintf(format, v...))
-	}
-}
-
-func Warn(format string, v ...interface{}) {
-	if 3 >= level {
-		warnLogger.Output(2, fmt.Sprintf(format, v...))
-	}
-}
-
-func Error(format string, v ...interface{}) {
-	if 4 >= level {
-		errorLogger.Output(2, fmt.Sprintf(format, v...))
-	}
-}
-
-func Fatal(format string, v ...interface{}) {
-	if 5 >= level {
-		fatalLogger.Output(2, fmt.Sprintf(format, v...))
-	}
-}
-
-func Traceln(v ...interface{}) {
-	if 0 >= level {
-		traceLogger.Output(2, fmt.Sprintln(v...))
-	}
-}
-
-func Debugln(v ...interface{}) {
-	if 1 >= level {
-		debugLogger.Output(2, fmt.Sprintln(v...))
-	}
-}
-
-func Infoln(v ...interface{}) {
-	if 2 >= level {
-		infoLogger.Output(2, fmt.Sprintln(v...))
-	}
-}
-
-func Warnln(v ...interface{}) {
-	if 3 >= level {
-		warnLogger.Output(2, fmt.Sprintln(v...))
-	}
-}
-
-func Errorln(v ...interface{}) {
-	if 4 >= level {
-		errorLogger.Output(2, fmt.Sprintln(v...))
-	}
-}
-
-func Fatalln(v ...interface{}) {
-	if 5 >= level {
-		fatalLogger.Output(2, fmt.Sprintln(v...))
-	}
+	Logger = level.NewFilter(Logger, al.o)
+	Logger = log.With(Logger, "ts", timestampFormat, "caller", log.DefaultCaller)
 }
