@@ -10,4 +10,5 @@ func Test_output(t *testing.T) {
 	Infoln("msg", "test")
 	Warnln("msg", "test")
 	Errorln("msg", "test")
+	Fatalln("msg")
 }
