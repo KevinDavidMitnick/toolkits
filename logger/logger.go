@@ -22,7 +22,6 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"os"
-	stdLog "log"
 	"time"
 )
 
@@ -108,8 +107,4 @@ func Warnln(msg ...interface{}) {
 
 func Errorln(msg ...interface{}) {
 	level.Error(Logger).Log(msg...)
-}
-
-func Fatalln(msg ...interface{}) {
-	stdLog.Fatalln(msg...)
 }
