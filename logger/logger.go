@@ -113,3 +113,27 @@ func Errorln(msg ...interface{}) {
 func Fatalln(msg ...interface{}) {
 	stdLog.Fatalln(msg...)
 }
+
+func Print(msg ...interface{}) {
+	level.Debug(Logger).Log(msg...)
+}
+
+func Debug(msg ...interface{}) {
+	level.Debug(Logger).Log(msg...)
+}
+
+func Info(msg ...interface{}) {
+	level.Info(Logger).Log(msg...)
+}
+
+func Warn(msg ...interface{}) {
+	level.Warn(Logger).Log(msg...)
+}
+
+func Error(msg ...interface{}) {
+	level.Error(Logger).Log(msg...)
+}
+
+func Fatal(msg ...interface{}) {
+	stdLog.Fatalln(msg...)
+}
