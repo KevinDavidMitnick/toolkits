@@ -111,5 +111,5 @@ func Errorln(msg ...interface{}) {
 }
 
 func Fatalln(msg ...interface{}) {
-	stdLog.Fattalln(msg...)
+	stdLog.Fatalln(msg...)
 }
