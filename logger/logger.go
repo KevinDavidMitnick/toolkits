@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"time"
+	stdLog "log"
 )
 
 var (
@@ -107,4 +108,8 @@ func Warnln(msg ...interface{}) {
 
 func Errorln(msg ...interface{}) {
 	level.Error(Logger).Log(msg...)
+}
+
+func Fattalln(msg ...interface{}) {
+	stdLog.Fattalln(msg...)
 }
