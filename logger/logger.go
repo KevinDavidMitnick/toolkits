@@ -14,7 +14,7 @@
 // Package promlog defines standardised ways to initialize Go kit loggers
 // across Prometheus components.
 // It should typically only ever be imported by main packages.
-package g
+package logger
 
 import (
 	"github.com/go-kit/kit/log"
@@ -79,12 +79,32 @@ func InitLog(allowFormat string, allowLevel string, filename string) {
 	} else {
 		file = os.Stderr
 	}
-	if allowFormat == "logfmt" {
-		Logger = log.NewLogfmtLogger(log.NewSyncWriter(file))
-	} else {
+	if allowFormat == "json" {
 		Logger = log.NewJSONLogger(log.NewSyncWriter(file))
+	} else {
+		Logger = log.NewLogfmtLogger(log.NewSyncWriter(file))
 	}
 
 	Logger = level.NewFilter(Logger, al.o)
 	Logger = log.With(Logger, "ts", timestampFormat, "caller", log.DefaultCaller)
+}
+
+func Println(msg ...interface{}) {
+	level.Debug(Logger).Log(msg...)
+}
+
+func Debugln(msg ...interface{}) {
+	level.Debug(Logger).Log(msg...)
+}
+
+func Infoln(msg ...interface{}) {
+	level.Info(Logger).Log(msg...)
+}
+
+func Warnln(msg ...interface{}) {
+	level.Warn(Logger).Log(msg...)
+}
+
+func Errorln(msg ...interface{}) {
+	level.Error(Logger).Log(msg...)
 }
